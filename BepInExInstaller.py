@@ -40,11 +40,14 @@ import time
 import sys
 import shutil
 import zipfile
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QCheckBox
-
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel, QCheckBox
+from PyQt5 import QtCore
 
 # change to URL of current version of BepInEx
 x64URL = 'https://github.com/BepInEx/BepInEx/releases/download/v5.4.22/BepInEx_x64_5.4.22.0.zip'
+
+# if BepInEx installs other files add them here
+BepFiles = ['BepInEx', 'changelog.txt', 'doorstop_config.ini', 'winhttp.dll']
 
 
 
@@ -65,10 +68,11 @@ class MyDirectoryApp(QWidget):
         mod_path = None
 
         # Create widgets
-        # pre_label = QLabel('This only works if you have BepInEx already installed to LethalCompany local files.')
+        self.error_label = QLabel()
         
         # BepInEx-related widgets
         self.BepInEx_checkbox = QCheckBox('Install BepInEx')
+        self.uninstall_checkbox = QCheckBox('Uninstall Current Mods and BepInEx')
         
         # Directory-related widgets
         dir_label = QLabel('Directory Path to \'local files\' of Lethal Company:')
@@ -89,6 +93,8 @@ class MyDirectoryApp(QWidget):
 
         # Create layout
         layout = QVBoxLayout()
+        layout.addWidget(self.error_label)
+        layout.addWidget(self.uninstall_checkbox)
         layout.addWidget(self.BepInEx_checkbox)
         layout.addWidget(dir_label)
         layout.addWidget(self.dir_input)
@@ -104,7 +110,7 @@ class MyDirectoryApp(QWidget):
         self.setLayout(layout)
 
         # Set window properties
-        self.setWindowTitle('Lethal Company BepInEx Mod Installer')
+        self.setWindowTitle('LethalCompany Mod Installer - V1.0')
         self.setGeometry(400, 500, 1000, 400)
 
         # Connect button click events to functions
@@ -124,14 +130,35 @@ class MyDirectoryApp(QWidget):
             file.write(self.directory_path)
 
         # Display the status message in the window
-        self.status_label.setText(f'Directory path saved: {self.directory_path}')
+        try:
+            self.status_label.setText(f'Directory path saved: {self.directory_path}')
+            self.error_label.setText('')
+            
+        except FileNotFoundError:
+            self.error_label.setText(f'ERROR! Directory path not found: {self.directory_path} - Please make sure you saved Directory before saving mods.')
     
     def mod_button_click(self):
         
+        # Uninstall the current mods and BepInEx if the checkbox is checked
+        Bep_Uninstall_Text =''
+        if self.uninstall_checkbox.isChecked():
+            Bep_Uninstall_Text = 'Uninstall successful'
+            for file in os.listdir(self.directory_path):
+                if file in BepFiles:
+                    print(f'Removing {file}...')
+                    if os.path.isfile(os.path.join(self.directory_path, file)):
+                        os.remove(os.path.join(self.directory_path, file))
+                    else:
+                        shutil.rmtree(os.path.join(self.directory_path, file))
+        
         # Install BepInEx if the checkbox is checked
-        BepText = ''
-        if (self.BepInEx_checkbox.isChecked()):
-            Download_BepInEx(self.directory_path)
+        Bep_Install_Text = ''
+        try:
+            if (self.BepInEx_checkbox.isChecked()):
+                Download_BepInEx(self.directory_path)
+                self.error_label.setText('')
+        except FileNotFoundError:
+            self.error_label.setText(f'ERROR! Destination directory does not exist: {self.directory_path} - Please make sure you saved Directory before saving mods.')
         
         # Get the mod path from the input field
         mod_path = self.mod_input.text()
@@ -139,10 +166,11 @@ class MyDirectoryApp(QWidget):
         # Grab BepInEx folder from zip files and copy to lethal company directory
         try:
             if(self.BepInEx_checkbox.isChecked()):
-                BepText = 'BepInEx Installed'
-            self.mod_status_label.setText(f'{BepText} - Files moved: {extract_and_copy_bepinex(mod_path, self.directory_path)}')
+                Bep_Install_Text = 'BepInEx Installed'
+                self.status_label.setText(f'Directory path saved: {self.directory_path} - BepInEx installed successfully.')
+            self.mod_status_label.setText(f'{Bep_Uninstall_Text} - {Bep_Install_Text} - Files moved: {extract_and_copy_bepinex(mod_path, self.directory_path)}')
         except FileNotFoundError:
-            self.mod_status_label.setText(f'{BepText} - Incorrect mod folder path. Please enter the correct mod folder path.')
+            self.mod_status_label.setText(f'{Bep_Uninstall_Text} - Incorrect mod folder path. Please enter the correct mod folder path.')
 
         
 def extract_and_copy_bepinex(mod_file_path, destination_path):
@@ -178,10 +206,14 @@ def extract_and_copy_bepinex(mod_file_path, destination_path):
 
 def move_to_dest(destination_path):
     # Copy the contents of '.\\TempFolder' to the destination path
+    if not os.path.exists(destination_path):
+        raise FileNotFoundError()
     shutil.copytree(".\\TempFolder", destination_path, dirs_exist_ok=True)
 
 def Download_BepInEx(destination_path):
     # Download the BepInEx folder from GitHub
+    if not os.path.exists(destination_path):
+        raise FileNotFoundError()
     http_response = urlopen(x64URL)
     with zipfile.ZipFile(BytesIO(http_response.read()), 'r') as zip_ref:
         zip_ref.extractall(destination_path)
