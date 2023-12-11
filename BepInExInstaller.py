@@ -2,41 +2,51 @@
 modinstaller.py
 
 Description:
-    This script facilitates the installation of mods for Lethal Company. 
+    This script facilitates the installation of BepInEx and/or mods for Lethal Company. 
     The user is prompted to input the path to the local installation of Lethal Company 
     and the path to the file that contains all the mods you wish to install. The script extracts the BepInEx folder from 
     the zip files and copies it to the specified Lethal Company directory.
+    
+    The current BepInEx version is 5.4.22.0. If the version changes, the script will not install properly.
 
 Author:
     Jacob Campbell
 
 Date:
-    12-10-2023
+    12-11-2023
 
 Usage:
+    - If you have not already installed BepInEx into LethalCompany local files, you will need to install it by checking the 
+    "install BepInEx" checkbox.
     - Have the zip files of the mods you wish to install in a single file.
-    - Ensure that BepInEx is already installed in the local files of Lethal Company.
     - Run this script and provide the required information when prompted.
-
+    - If you only want to install BepInEx, you can leave the mod path empty and BepInEx will install if the checkbox is checked.
+    
 Note:
-    This script assumes that the mod's zip file contains a BepInEx folder and
-    should be used with caution. Always verify the mod's compatibility and 
+    This script should be used with caution. Always verify the mod's compatibility and 
     follow any additional instructions provided by the mod creator.
 
 Disclaimer:
     The author is not responsible for any issues arising from the use of this script.
     Use it at your own risk.
 
-Additional Information for myself:
-    This is my first attempt at a simple GUI project. Intended to be used amongst my friends. This script saves no time and was an effort
-    to learn how to use PyQt5 and zip files.
 '''
+
+
+from urllib.request import urlopen
+from io import BytesIO
 import os
 import time
 import sys
 import shutil
 import zipfile
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QCheckBox
+
+
+# change to URL of current version of BepInEx
+x64URL = 'https://github.com/BepInEx/BepInEx/releases/download/v5.4.22/BepInEx_x64_5.4.22.0.zip'
+
+
 
 class MyDirectoryApp(QWidget):
     def __init__(self):
@@ -55,7 +65,10 @@ class MyDirectoryApp(QWidget):
         mod_path = None
 
         # Create widgets
-        pre_label = QLabel('This only works if you have BepInEx already installed to LethalCompany local files.')
+        # pre_label = QLabel('This only works if you have BepInEx already installed to LethalCompany local files.')
+        
+        # BepInEx-related widgets
+        self.BepInEx_checkbox = QCheckBox('Install BepInEx')
         
         # Directory-related widgets
         dir_label = QLabel('Directory Path to \'local files\' of Lethal Company:')
@@ -76,7 +89,7 @@ class MyDirectoryApp(QWidget):
 
         # Create layout
         layout = QVBoxLayout()
-        layout.addWidget(pre_label)
+        layout.addWidget(self.BepInEx_checkbox)
         layout.addWidget(dir_label)
         layout.addWidget(self.dir_input)
         layout.addWidget(dir_save_button)
@@ -114,16 +127,27 @@ class MyDirectoryApp(QWidget):
         self.status_label.setText(f'Directory path saved: {self.directory_path}')
     
     def mod_button_click(self):
+        
+        # Install BepInEx if the checkbox is checked
+        BepText = ''
+        if (self.BepInEx_checkbox.isChecked()):
+            Download_BepInEx(self.directory_path)
+        
+        # Get the mod path from the input field
         mod_path = self.mod_input.text()
         
-        # Copy BepInEx folder from the mod path to the directory path
+        # Grab BepInEx folder from zip files and copy to lethal company directory
         try:
-            self.mod_status_label.setText(f'Files moved: {extract_and_copy_bepinex(mod_path, self.directory_path)}\\BepInEx')
+            if(self.BepInEx_checkbox.isChecked()):
+                BepText = 'BepInEx Installed'
+            self.mod_status_label.setText(f'{BepText} - Files moved: {extract_and_copy_bepinex(mod_path, self.directory_path)}')
         except FileNotFoundError:
-            self.mod_status_label.setText('Incorrect mod path. Please enter the correct mod path.')
+            self.mod_status_label.setText(f'{BepText} - Incorrect mod folder path. Please enter the correct mod folder path.')
 
         
 def extract_and_copy_bepinex(mod_file_path, destination_path):
+    
+    # Sleep to show application changes
     time.sleep(2)
     
     to_return =[]
@@ -155,6 +179,12 @@ def extract_and_copy_bepinex(mod_file_path, destination_path):
 def move_to_dest(destination_path):
     # Copy the contents of '.\\TempFolder' to the destination path
     shutil.copytree(".\\TempFolder", destination_path, dirs_exist_ok=True)
+
+def Download_BepInEx(destination_path):
+    # Download the BepInEx folder from GitHub
+    http_response = urlopen(x64URL)
+    with zipfile.ZipFile(BytesIO(http_response.read()), 'r') as zip_ref:
+        zip_ref.extractall(destination_path)
 
 
 def main():
