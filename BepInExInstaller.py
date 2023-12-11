@@ -40,8 +40,8 @@ import time
 import sys
 import shutil
 import zipfile
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel, QCheckBox
-from PyQt5 import QtCore
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QCheckBox
+
 
 # change to URL of current version of BepInEx
 x64URL = 'https://github.com/BepInEx/BepInEx/releases/download/v5.4.22/BepInEx_x64_5.4.22.0.zip'
@@ -94,12 +94,12 @@ class MyDirectoryApp(QWidget):
         # Create layout
         layout = QVBoxLayout()
         layout.addWidget(self.error_label)
-        layout.addWidget(self.uninstall_checkbox)
-        layout.addWidget(self.BepInEx_checkbox)
         layout.addWidget(dir_label)
         layout.addWidget(self.dir_input)
         layout.addWidget(dir_save_button)
         layout.addWidget(self.status_label)
+        layout.addWidget(self.uninstall_checkbox)
+        layout.addWidget(self.BepInEx_checkbox)
         layout.addWidget(self.mod_label)
         layout.addWidget(self.mod_input)
         layout.addWidget(mod_save_button)
@@ -175,45 +175,32 @@ class MyDirectoryApp(QWidget):
         
 def extract_and_copy_bepinex(mod_file_path, destination_path):
     
+    # Verify that the destination directory exists
+    if (not os.path.exists(destination_path)):
+        raise FileNotFoundError()
+    
     # Sleep to show application changes
-    time.sleep(2)
+    time.sleep(1)
+    to_return = []
     
-    to_return =[]
-    # Create a temporary folder if it doesn't exist
-    if not os.path.exists(".\\TempFolder"):
-        os.mkdir(".\\TempFolder")
-    
-    # Extract the contents of the zip file to the temporary folder
-    for file in os.listdir(mod_file_path):
-        print(f'Extracting {file}...')
-        to_return.append(file)
-        with zipfile.ZipFile(os.path.join(mod_file_path,file), 'r') as zip_ref:
-            zip_ref.extractall(".\\TempFolder")
-    
-        # Remove all files not named BepInEx in '.\\TempFolder'
-        for file in os.listdir(".\\TempFolder"):
-            if file != "BepInEx":
-                os.remove(f".\\TempFolder\\{file}")
-    
-    # Move the contents of the temporary folder to the destination path
-    move_to_dest(destination_path)
-    
-    # Remove the temporary folder
-    shutil.rmtree(".\\TempFolder")
+    # Extract the contents of the zip file to the destination directory
+    for entry in os.listdir(mod_file_path):
+        print(f'Extracting {entry}...')
+        to_return.append(entry)
+        with zipfile.ZipFile(os.path.join(mod_file_path, entry), 'r') as zip_ref:
+            for file in zip_ref.namelist():
+                if (file.startswith("BepInEx/")):
+                    zip_ref.extract(file, destination_path)
     
     return to_return
 
-
-def move_to_dest(destination_path):
-    # Copy the contents of '.\\TempFolder' to the destination path
-    if not os.path.exists(destination_path):
-        raise FileNotFoundError()
-    shutil.copytree(".\\TempFolder", destination_path, dirs_exist_ok=True)
-
 def Download_BepInEx(destination_path):
-    # Download the BepInEx folder from GitHub
+    
+    # Verify that the destination directory exists
     if not os.path.exists(destination_path):
         raise FileNotFoundError()
+    
+    # Download the BepInEx folder from GitHub
     http_response = urlopen(x64URL)
     with zipfile.ZipFile(BytesIO(http_response.read()), 'r') as zip_ref:
         zip_ref.extractall(destination_path)
