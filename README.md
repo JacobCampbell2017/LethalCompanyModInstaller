@@ -2,7 +2,8 @@
 
 This was intended to make installing Lethal Company mods easier for our group of friends. I created a simple GUI application that requires directory paths to install mods that use BepInEx.
 
-The checkbox allows a user to install BepInEx straight from GitHub into the local files of lethal company. If the local file path is correct, the installer will add BepInEx directly to it. 
+The checkboxs allows a user to install BepInEx straight from GitHub into the local files of lethal company. If the local file path is correct, the installer will add BepInEx directly to it. 
+The uninstall checkbox will remove both BepInEx and any mods within the BepInEx folder.
 
 The first directory is lethal company's "local files" directory. This can be found by right-clicking on lethal company in the steam library, going to "manage", and then "browse local files".
 The directory that is opened up is the directory path that goes in the first text box, "Directory Path to 'local files of Lethal Company:".
@@ -11,7 +12,11 @@ The directory that is opened up is the directory path that goes in the first tex
 The second required directory should be a folder that contains all of the BepInEx mods that you wish to install. Do not unzip the files when putting them into the folder.
     - This can be left blank if you are only wanting to install BepInEx without mods.
 
-**This currently does not uninstall currently installed mods**
+**If both checkboxes are checked, and their is a mod folder path, the order is as follows**
+  1. Uninstalls mods
+  2. Reinstalls BepInEx
+  3. Installs Mods and places them in BepInEx
+
 
 Usage:
 
