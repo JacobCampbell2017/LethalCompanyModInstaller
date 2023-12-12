@@ -41,6 +41,7 @@ import sys
 import shutil
 import zipfile
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QCheckBox
+from PyQt5.QtGui import QPalette, QColor, QFont
 
 
 # change to URL of current version of BepInEx
@@ -110,13 +111,15 @@ class MyDirectoryApp(QWidget):
         self.setLayout(layout)
 
         # Set window properties
-        self.setWindowTitle('LethalCompany Mod Installer - V1.0')
+        self.setWindowTitle('LethalCompany Mod Installer - V1.01')
         self.setGeometry(400, 500, 1000, 400)
 
         # Connect button click events to functions
         dir_save_button.clicked.connect(self.dir_button_click)
         mod_save_button.clicked.connect(self.mod_button_click)
         exit_button.clicked.connect(sys.exit)
+        
+        # Set Style
         
         # Show the window
         self.show()
@@ -191,7 +194,11 @@ def extract_and_copy_bepinex(mod_file_path, destination_path):
             for file in zip_ref.namelist():
                 if (file.startswith("BepInEx/")):
                     zip_ref.extract(file, destination_path)
-    
+                
+                # If dont have BepInEx file, send dll to plugins
+                elif(file.endswith('.dll')):
+                    zip_ref.extract(file, os.path.join(destination_path, 'BepInEx\\plugins'))
+
     return to_return
 
 def Download_BepInEx(destination_path):
